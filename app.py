@@ -226,13 +226,14 @@ else:
 st.markdown("---")
 st.subheader("Drill-Down Views")
 
-nav_cols = st.columns(5)
+nav_cols = st.columns(6)
 pages = [
     ("💻 Compute", "pages/1_Compute_Costs.py", "Warehouse credit usage and trends"),
     ("🗄️ Storage", "pages/2_Storage_Costs.py", "DB, Stage, Failsafe & Time Travel"),
     ("🔍 Queries", "pages/3_Query_Analysis.py", "Expensive queries, user costs"),
     ("⚙️ Serverless", "pages/4_Serverless_Cloud_Services.py", "Pipes, Tasks, MV, Clustering"),
     ("🏭 Efficiency", "pages/5_Warehouse_Efficiency.py", "Idle time, queuing, sizing"),
+    ("🤖 AI & Cortex", "pages/6_AI_Cortex_Costs.py", "LLM functions, Search, ML, Document AI"),
 ]
 for col, (title, _, desc) in zip(nav_cols, pages):
     col.info(f"**{title}**\n\n{desc}")

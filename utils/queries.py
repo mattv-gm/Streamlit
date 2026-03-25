@@ -559,3 +559,206 @@ GROUP BY 1
 ORDER BY 4 DESC NULLS LAST
 LIMIT 50
 """
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AI / CORTEX SERVICES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── Cortex LLM Functions (COMPLETE, SUMMARIZE, TRANSLATE, SENTIMENT, etc.) ───
+
+AI_CORTEX_FUNCTIONS_DAILY = """
+SELECT
+    DATE_TRUNC('day', start_time)           AS usage_date,
+    function_name,
+    model_name,
+    ROUND(SUM(credits_used), 6)             AS credits_used,
+    SUM(token_count)                        AS total_tokens,
+    COUNT(*)                                AS call_count
+FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY
+WHERE {date_filter}
+GROUP BY 1, 2, 3
+ORDER BY 1 DESC, 4 DESC
+"""
+
+AI_CORTEX_FUNCTIONS_BY_MODEL = """
+SELECT
+    model_name,
+    function_name,
+    ROUND(SUM(credits_used), 4)             AS total_credits,
+    SUM(token_count)                        AS total_tokens,
+    COUNT(*)                                AS call_count,
+    ROUND(AVG(token_count), 0)              AS avg_tokens_per_call
+FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY
+WHERE {date_filter}
+GROUP BY 1, 2
+ORDER BY 3 DESC
+"""
+
+AI_CORTEX_FUNCTIONS_BY_USER = """
+SELECT
+    user_name,
+    model_name,
+    function_name,
+    ROUND(SUM(credits_used), 4)             AS total_credits,
+    SUM(token_count)                        AS total_tokens,
+    COUNT(*)                                AS call_count
+FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY
+WHERE {date_filter}
+GROUP BY 1, 2, 3
+ORDER BY 4 DESC
+LIMIT 50
+"""
+
+AI_CORTEX_FUNCTIONS_BY_WAREHOUSE = """
+SELECT
+    warehouse_name,
+    model_name,
+    function_name,
+    ROUND(SUM(credits_used), 4)             AS total_credits,
+    SUM(token_count)                        AS total_tokens,
+    COUNT(*)                                AS call_count
+FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY
+WHERE {date_filter}
+GROUP BY 1, 2, 3
+ORDER BY 4 DESC
+LIMIT 50
+"""
+
+# ── Cortex Search ─────────────────────────────────────────────────────────────
+
+AI_CORTEX_SEARCH_DAILY = """
+SELECT
+    DATE_TRUNC('day', start_time)           AS usage_date,
+    service_name,
+    ROUND(SUM(credits_used), 6)             AS credits_used,
+    SUM(num_queries)                        AS total_queries,
+    SUM(num_rows_indexed)                   AS rows_indexed
+FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_SEARCH_SERVING_USAGE_HISTORY
+WHERE {date_filter}
+GROUP BY 1, 2
+ORDER BY 1 DESC, 3 DESC
+"""
+
+AI_CORTEX_SEARCH_BY_SERVICE = """
+SELECT
+    service_name,
+    database_name,
+    schema_name,
+    ROUND(SUM(credits_used), 4)             AS total_credits,
+    SUM(num_queries)                        AS total_queries,
+    SUM(num_rows_indexed)                   AS total_rows_indexed,
+    ROUND(AVG(num_queries), 1)              AS avg_daily_queries
+FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_SEARCH_SERVING_USAGE_HISTORY
+WHERE {date_filter}
+GROUP BY 1, 2, 3
+ORDER BY 4 DESC
+"""
+
+# ── Cortex Analyst (Text-to-SQL) ──────────────────────────────────────────────
+# Note: Billed via cloud services credits; surfaced through METERING_HISTORY
+
+AI_CORTEX_VIA_METERING = """
+SELECT
+    DATE_TRUNC('day', start_time)           AS usage_date,
+    service_type,
+    ROUND(SUM(credits_used), 6)             AS credits_used
+FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_HISTORY
+WHERE (
+    service_type ILIKE '%CORTEX%'
+    OR service_type ILIKE '%AI%'
+    OR service_type ILIKE '%ML%'
+    OR service_type ILIKE '%DOCUMENT%'
+)
+  AND {date_filter}
+GROUP BY 1, 2
+ORDER BY 1 DESC, 3 DESC
+"""
+
+# ── ML Functions (Forecasting, Anomaly Detection, Classification, etc.) ───────
+
+AI_ML_FUNCTIONS_DAILY = """
+SELECT
+    DATE_TRUNC('day', start_time)           AS usage_date,
+    function_name,
+    ROUND(SUM(credits_used), 6)             AS credits_used,
+    COUNT(*)                                AS call_count
+FROM SNOWFLAKE.ACCOUNT_USAGE.ML_FUNCTIONS_USAGE_HISTORY
+WHERE {date_filter}
+GROUP BY 1, 2
+ORDER BY 1 DESC, 3 DESC
+"""
+
+AI_ML_FUNCTIONS_BY_USER = """
+SELECT
+    user_name,
+    function_name,
+    ROUND(SUM(credits_used), 4)             AS total_credits,
+    COUNT(*)                                AS call_count
+FROM SNOWFLAKE.ACCOUNT_USAGE.ML_FUNCTIONS_USAGE_HISTORY
+WHERE {date_filter}
+GROUP BY 1, 2
+ORDER BY 3 DESC
+LIMIT 50
+"""
+
+# ── Document AI ───────────────────────────────────────────────────────────────
+
+AI_DOCUMENT_AI_DAILY = """
+SELECT
+    DATE_TRUNC('day', start_time)           AS usage_date,
+    model_name,
+    ROUND(SUM(credits_used), 6)             AS credits_used,
+    SUM(num_pages_processed)                AS pages_processed,
+    COUNT(*)                                AS call_count
+FROM SNOWFLAKE.ACCOUNT_USAGE.DOCUMENT_AI_USAGE_HISTORY
+WHERE {date_filter}
+GROUP BY 1, 2
+ORDER BY 1 DESC, 3 DESC
+"""
+
+AI_DOCUMENT_AI_BY_USER = """
+SELECT
+    user_name,
+    model_name,
+    ROUND(SUM(credits_used), 4)             AS total_credits,
+    SUM(num_pages_processed)                AS total_pages,
+    COUNT(*)                                AS call_count,
+    ROUND(SUM(credits_used) / NULLIF(SUM(num_pages_processed), 0), 6) AS credits_per_page
+FROM SNOWFLAKE.ACCOUNT_USAGE.DOCUMENT_AI_USAGE_HISTORY
+WHERE {date_filter}
+GROUP BY 1, 2
+ORDER BY 3 DESC
+LIMIT 50
+"""
+
+# ── Expensive AI Queries in Query History ─────────────────────────────────────
+# Identifies queries that called Cortex/AI functions by scanning query text
+
+AI_QUERIES_FROM_HISTORY = """
+SELECT
+    query_id,
+    query_text,
+    user_name,
+    warehouse_name,
+    ROUND(total_elapsed_time / 1000, 1)     AS elapsed_sec,
+    ROUND(credits_used_cloud_services, 6)   AS cloud_svc_credits,
+    start_time
+FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+WHERE {date_filter}
+  AND execution_status = 'SUCCESS'
+  AND (
+        UPPER(query_text) LIKE '%SNOWFLAKE.CORTEX.COMPLETE%'
+     OR UPPER(query_text) LIKE '%SNOWFLAKE.CORTEX.SUMMARIZE%'
+     OR UPPER(query_text) LIKE '%SNOWFLAKE.CORTEX.TRANSLATE%'
+     OR UPPER(query_text) LIKE '%SNOWFLAKE.CORTEX.SENTIMENT%'
+     OR UPPER(query_text) LIKE '%SNOWFLAKE.CORTEX.EXTRACT_ANSWER%'
+     OR UPPER(query_text) LIKE '%SNOWFLAKE.CORTEX.CLASSIFY_TEXT%'
+     OR UPPER(query_text) LIKE '%SNOWFLAKE.CORTEX.EMBED_TEXT%'
+     OR UPPER(query_text) LIKE '%CORTEX_SEARCH%'
+     OR UPPER(query_text) LIKE '%SNOWFLAKE.ML.%'
+     OR UPPER(query_text) LIKE '%SNOWFLAKE.DOCUMENT_AI%'
+  )
+ORDER BY total_elapsed_time DESC
+LIMIT 200
+"""
